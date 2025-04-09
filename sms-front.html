@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>iOS SMS Viewer</title>
+  <style>
+    body {
+  background: #e5e5ea;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-user-select: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+    .phone {
+      width: 375px;
+      height: 667px;
+      background: white;
+      border-radius: 40px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .header {
+      padding: 15px;
+      background: #f9f9f9;
+      text-align: center;
+      font-weight: bold;
+      border-bottom: 1px solid #ccc;
+    }
+
+    .input-bar {
+      padding: 10px;
+      background: #fff;
+      display: flex;
+      gap: 10px;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .input-bar input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      font-size: 16px;
+    }
+
+    .chat {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #f2f2f7;
+  scroll-behavior: smooth;
+
+  /* iOS-style scroll */
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+}
+
+.chat::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+    .msg {
+      background: white;
+      padding: 10px 15px;
+      border-radius: 18px;
+      max-width: 70%;
+      align-self: flex-start;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      white-space: pre-wrap;
+    }
+
+    .timestamp {
+      font-size: 10px;
+      color: #999;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <div class="header">📱 iPhone SMS</div>
+    <div class="input-bar">
+      <input type="text" id="phoneInput" placeholder="71234567894" />
+    </div>
+    <div class="chat" id="chat"></div>
+  </div>
+
+  <audio id="notifSound" src="https://notificationsounds.com/storage/sounds/file-sounds-1150-pristine.mp3" preload="auto"></audio>
+
+  <script>
+    const chat = document.getElementById('chat');
+    const phoneInput = document.getElementById('phoneInput');
+    const notifSound = document.getElementById('notifSound');
+    let lastMessageIds = new Set();
+    let currentPhone = '';
+
+    function formatTime(isoStr) {
+      const d = new Date(isoStr);
+      return d.toLocaleTimeString();
+    }
+
+    function fetchSMS() {
+      const phone = phoneInput.value.trim();
+      if (!/^\d{11}$/.test(phone)) return;
+
+      if (phone !== currentPhone) {
+        // Сброс при смене номера
+        currentPhone = phone;
+        lastMessageIds.clear();
+        chat.innerHTML = '';
+      }
+
+      fetch(`http://localhost:37730/sms?phoneNumber=${phone}`)
+        .then(r => r.json())
+        .then(data => {
+          let newMessages = 0;
+          data.forEach(sms => {
+            if (lastMessageIds.has(sms.id)) return;
+            lastMessageIds.add(sms.id);
+            newMessages++;
+
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'msg';
+            msgDiv.innerHTML = `${sms.text}<div class="timestamp">${formatTime(sms.createdAt)}</div>`;
+            chat.appendChild(msgDiv);
+            chat.scrollTop = chat.scrollHeight;
+          });
+
+          if (newMessages > 0) {
+            notifSound.play().catch(() => {}); // Безопасно в случае блокировки автоплея
+          }
+        })
+        .catch(err => console.error('Fetch error:', err));
+    }
+
+    setInterval(fetchSMS, 5000);
+  </script>
+</body>
+</html>
