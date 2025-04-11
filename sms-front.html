@@ -122,7 +122,7 @@
         chat.innerHTML = '';
       }
 
-      fetch(`http://localhost:37730/sms?phoneNumber=${phone}`)
+      fetch(`http://localhost:37731/sms?phoneNumber=${phone}`)
         .then(r => r.json())
         .then(data => {
           let newMessages = 0;

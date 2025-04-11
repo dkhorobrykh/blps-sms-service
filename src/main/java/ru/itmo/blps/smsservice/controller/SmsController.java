@@ -1,5 +1,7 @@
 package ru.itmo.blps.smsservice.controller;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +30,7 @@ public class SmsController {
             @RequestParam String phoneNumber,
             @RequestParam String text
     ) {
-        return ResponseEntity.ok(smsService.sendSms(phoneNumber, text));
+        String decodedText = URLDecoder.decode(text, StandardCharsets.UTF_8);
+        return ResponseEntity.ok(smsService.sendSms(phoneNumber, decodedText));
     }
 }
